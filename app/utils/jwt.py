@@ -22,3 +22,4 @@ def extract_jwt(auth_token):
         return token_data
     except InvalidTokenError as e:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=f"Invalid token: {e}")
+    

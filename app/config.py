@@ -14,3 +14,4 @@ class Config:
 
     JWT_SECRET = os.getenv("JWT_SECRET")
     JWT_HASH_METHOD = os.getenv("JWT_HASH_METHOD")
+    
