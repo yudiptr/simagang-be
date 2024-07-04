@@ -14,7 +14,7 @@ def login_required(
         @wraps(f)
         async def wrapper(*args, **kwargs) -> Any:
             request: Request = kwargs.get("request")
-            auth_token = request.headers.get("Authorization", request.headers.get("authorization"))
+            auth_token = request.headers.get("Authorization", request.headers.get("authorization"))[7:]
 
             if not auth_token:
                 raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized")
