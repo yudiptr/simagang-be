@@ -14,12 +14,12 @@ def login_required(
         @wraps(f)
         async def wrapper(*args, **kwargs) -> Any:
             request: Request = kwargs.get("request")
-            auth_token = request.headers.get("Authorization", request.headers.get("authorization"))[7:]
+            auth_token = request.headers.get("Authorization", request.headers.get("authorization"))
 
             if not auth_token:
                 raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized")
 
-            token_data = extract_jwt(auth_token)
+            token_data = extract_jwt(auth_token[7:])
 
             allowed_token_types = token_types
             if "role" in token_data and token_data["role"] not in allowed_token_types:
