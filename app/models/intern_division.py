@@ -10,7 +10,7 @@ class InternDivision(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     created_at = Column(DateTime, default=datetime.now(timezone.utc))
     updated_at = Column(DateTime, default=datetime.now(timezone.utc), onupdate=func.now())
-    division_name = Column(String)
+    division_name = Column(String, unique= True, nullable=False)
     
     # Define relationship with InternQuota
     quotas = relationship("InternQuota", back_populates="division")

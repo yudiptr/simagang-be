@@ -10,7 +10,7 @@ class InternQuota(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     created_at = Column(DateTime, default=datetime.now(timezone.utc))
     updated_at = Column(DateTime, default=datetime.now(timezone.utc), onupdate=func.now())
-    duration = Column(Integer)
+    duration = Column(String)
     quota = Column(Integer)
     
     # Define foreign key relationship with InternDivision
