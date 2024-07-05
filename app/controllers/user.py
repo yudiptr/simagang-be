@@ -140,9 +140,19 @@ class UserController:
                 else:
                     req["user_account_id"] = validation_data["sub"]
                     user_profile = UserProfile(**req)
+
+                    user_account: UserAccount = session.query(UserAccount).filter_by(
+                        id = validation_data["sub"]
+                    ).first()
+
+                    user_account.is_complete = True
+
+                    session.add(user_account)
                     
                 session.add(user_profile)
                 session.commit()
+
+
                 
                 res = dict(
                         message = "Success update profile",
