@@ -1,6 +1,7 @@
 from app.utils.databases import session_scope
 from fastapi import Response, status
 from app.models.user_account import UserAccount
+from app.models.user_profile import UserProfile
 import json
 from app.utils.jwt import create_access_token
 
@@ -116,6 +117,49 @@ class UserController:
         except Exception as e :
             res = dict(
                 message = "Failed to login due to server",
+                code = status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+        
+            return Response(
+                content=json.dumps(res),
+                media_type="application/json",
+                status_code= status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
+    @staticmethod
+    async def update_profile(req: dict, validation_data: dict) -> Response :
+        try :
+            with session_scope() as session :
+                user_profile: UserProfile = session.query(UserProfile).filter_by(
+                    user_account_id = validation_data["sub"]
+                ).first()
+
+                if user_profile:
+                    for key, value in req.items():
+                        setattr(user_profile, key, value)
+                else:
+                    req["user_account_id"] = validation_data["sub"]
+                    user_profile = UserProfile(**req)
+                    
+                session.add(user_profile)
+                session.commit()
+                
+                res = dict(
+                        message = "Success update profile",
+                        code = status.HTTP_200_OK,
+                        data = req
+                    )
+                
+                return Response(
+                    content=json.dumps(res),
+                    media_type="application/json",
+                    status_code= status.HTTP_200_OK
+                )
+
+
+        except Exception as e :
+            res = dict(
+                message = "Failed to update profile due to server",
                 code = status.HTTP_500_INTERNAL_SERVER_ERROR
             )
         

@@ -12,11 +12,9 @@ class UserProfileSchema(Schema):
     phone_number = fields.Str(required=True, validate=validate.Regexp(r'^\+?[0-9]+$', error="Phone number must be numeric and can start with +."))
     university = fields.Str(required=True, validate=validate.Length(min=1))
     semester = fields.Int(required=True, validate=validate.Range(min=1, max=12))
-    gender = fields.Str(validate=validate.OneOf([gender.value for gender in Genders]))
-
+    gender = fields.Str(required=True, validate=validate.OneOf([gender.value for gender in Genders]))
+    email = fields.Str(required=True)
+    
     @post_load
     def make_user(self, data, **kwargs):
         return UserProfile(**data)
-
-# Example usage
-user_schema = UserProfileSchema()
