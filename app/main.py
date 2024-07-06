@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Response, Request
 from app.routers.user import user_router
 from app.routers.auth import auth_router
+from app.routers.interns import intern_router
 from app.utils.databases import Base, engine
 from app.utils.decorators import login_required
 import json
@@ -14,3 +15,4 @@ Base.metadata.create_all(bind=engine)
 
 app.include_router(user_router)
 app.include_router(auth_router)
+app.include_router(intern_router)

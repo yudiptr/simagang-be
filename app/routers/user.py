@@ -19,7 +19,7 @@ async def update_profile(request: Request, validation_data: dict = None):
     data = json.loads(json_data)
     
     try : 
-        validated_data = UserProfileSchema().load(data)
+        UserProfileSchema().load(data)
     except ValidationError as e :
         res = dict(
             message = "Validation error",
