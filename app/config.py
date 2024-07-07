@@ -15,3 +15,7 @@ class Config:
     JWT_SECRET = os.getenv("JWT_SECRET")
     JWT_HASH_METHOD = os.getenv("JWT_HASH_METHOD")
     
+
+    AWS_ACCESS_KEY = os.getenv("AWS_ACCESS_KEY")
+    AWS_SECRET_KEY = os.getenv("AWS_SECRET_KEY")
+    AWS_BUCKET_NAME = os.getenv("AWS_BUCKET_NAME")
