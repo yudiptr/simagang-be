@@ -26,7 +26,7 @@ async def get_intern_quota():
 @login_required(
     token_types=["Admin"],
 )
-async def accept_intern_registration(
+async def get_registration_list(
     request: Request
 ):
     res = await InternController().get_list_registration_intern()
