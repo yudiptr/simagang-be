@@ -1,4 +1,5 @@
-from datetime import datetime
+from datetime import datetime, timezone
+import io
 import json
 from typing import List
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Response, Request, UploadFile, status
@@ -9,6 +10,8 @@ from app.schema.register_intern import FileTypes, InternFiles
 from app.schema.set_intern_quota import SetInternQuota
 from app.schema.update_intern_registration import UpdateInternRegistration
 from app.utils.decorators import login_required
+from botocore.exceptions import NoCredentialsError, PartialCredentialsError, ClientError
+from app.utils.boto3 import s3, bucket_name
 
 intern_router = APIRouter(prefix='/intern')
 
@@ -68,10 +71,22 @@ async def final_report_intern(
     division_id: int = Form(..., description="Division ID"),
     intern_certificate: UploadFile = File(..., media_type='application/pdf')
 ):
-    file_size = len(intern_certificate.file.read())
+    
+
+    intern_certificate_content = await intern_certificate.read()
+    file_size = len(intern_certificate_content)
     if file_size > (3 * 1024 * 1024):  # 3MB limit
         raise HTTPException(status_code=400, detail="File intern certificate exceeds 3MB limit")
 
+    try:
+        s3.head_bucket(Bucket=bucket_name)
+    except ClientError as e:
+        error_code = int(e.response['Error']['Code'])
+        if error_code == 404:
+            raise HTTPException(status_code=404, detail="Bucket does not exist")
+        else:
+            raise HTTPException(status_code=500, detail="Error checking bucket")
+    
     try:
         start_date = datetime.strptime(start_date, "%d/%m/%Y")
         end_date = datetime.strptime(end_date, "%d/%m/%Y")
@@ -83,6 +98,7 @@ async def final_report_intern(
         start_date,
         end_date,
         division_id,
+        intern_certificate_content,
         intern_certificate
     )
     return res
@@ -162,8 +178,11 @@ async def register_intern(
         files: InternFiles = Depends()
     ):
 
+
+    file_data = {}
     for attr_name, attr_value in files.__dict__.items():
-        file_size = len(attr_value.file.read())
+        file_content = await attr_value.read()  # Await the read operation
+        file_data[attr_name] = file_content  # Store the file content bytes
 
         if attr_name == "photo":
             if attr_value.content_type != FileTypes.PNG.value:
@@ -171,13 +190,14 @@ async def register_intern(
         else:
             if attr_value.content_type != FileTypes.PDF.value:
                 raise HTTPException(status_code=400, detail=f"File {attr_name} must be PDF format")
-        if file_size > (3 * 1024 * 1024):  # 3MB limit
+        
+        if len(file_content) > (3 * 1024 * 1024):  # 3MB limit
             raise HTTPException(status_code=400, detail=f"File {attr_name} exceeds 3MB limit")
-
+        
     res = await InternController().register_intern(
         division_id,
         intern_duration,
-        files,
+        file_data,
         validation_data
     )
     return res

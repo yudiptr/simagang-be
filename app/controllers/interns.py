@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
-from typing import List
+import io
+from typing import Dict, List
 from app.choices.intern_registration_status import InternRegistrationStatus
 from app.models.intern_finished import InternFinished
 from app.models.intern_registration import InternRegistration
@@ -15,14 +16,7 @@ from app.schema.intern_division import InternDivisionSchema
 import boto3
 from app.config import Config
 from botocore.exceptions import NoCredentialsError, PartialCredentialsError, ClientError
-
-s3 = boto3.client(
-    's3',
-    aws_access_key_id = Config.AWS_ACCESS_KEY,
-    aws_secret_access_key = Config.AWS_SECRET_KEY
-)
-
-bucket_name = str(Config.AWS_BUCKET_NAME)
+from app.utils.boto3 import s3, bucket_name
 class InternController:
 
     @staticmethod
@@ -31,24 +25,17 @@ class InternController:
         start_date: datetime,
         end_date: datetime,
         division_id : int,
+        intern_byte: bytes,
         intern_certificate: UploadFile
     ):
         try:
             with session_scope() as session :   
-                try:
-                    s3.head_bucket(Bucket=bucket_name)
-                except ClientError as e:
-                    error_code = int(e.response['Error']['Code'])
-                    if error_code == 404:
-                        raise HTTPException(status_code=404, detail="Bucket does not exist")
-                    else:
-                        raise HTTPException(status_code=500, detail="Error checking bucket")
-                    
+
                 try:
                     current_time = datetime.now(timezone.utc)
                     milliseconds = current_time.strftime("%f")
                     filename = f"{validation_data['sub']}_{milliseconds}_{intern_certificate.filename}"
-                    s3.upload_fileobj(intern_certificate.file, bucket_name, filename)
+                    s3.upload_fileobj(io.BytesIO(intern_byte), bucket_name, filename)
                 except ClientError as e:
                     raise HTTPException(status_code=500, detail=f"Error uploading file: {str(e)}")
                 
@@ -314,7 +301,7 @@ class InternController:
             )
 
     @staticmethod
-    async def register_intern(division_id: int, intern_duration: str, files: InternFiles, validation_data: dict):
+    async def register_intern(division_id: int, intern_duration: str, files: Dict[str, bytes], validation_data: dict):
         try:
             with session_scope() as session :   
                 division: InternDivision = session.query(InternDivision).filter_by(
@@ -348,7 +335,7 @@ class InternController:
                         status_code= status.HTTP_400_BAD_REQUEST
                     )
                 
-                if intern_quota.quota <= 1 :
+                if intern_quota.quota <= 0 :
                     res = dict(
                         message = f"Division {division.division_name} with duration {intern_duration} did not has any quota left",
                         code = status.HTTP_400_BAD_REQUEST
@@ -369,17 +356,18 @@ class InternController:
                         raise HTTPException(status_code=500, detail="Error checking bucket")
 
                 
-                user_filename = dict()
+                user_filenames = {}
                 try:
-                    for key, file in files.dict().items():
+                    for key, data in files.items():
                         current_time = datetime.now(timezone.utc)
                         milliseconds = current_time.strftime("%f")
-                        filename = f"{validation_data['sub']}_{division.division_name}_{milliseconds}_{file.filename}"
-                        s3.upload_fileobj(file.file, bucket_name, filename)
-                        user_filename[key] = filename
+                        filename = f"{validation_data['sub']}_{division.division_name}_{milliseconds}_{key}"
+
+                        s3.upload_fileobj(io.BytesIO(data), bucket_name, filename)
+                        user_filenames[key] = filename
                 except ClientError as e:
                     raise HTTPException(status_code=500, detail=f"Error uploading file: {str(e)}")
-                
+
                 intern_quota.quota = intern_quota.quota - 1
                 session.add(intern_quota)
 
@@ -387,11 +375,11 @@ class InternController:
                     division_id = division_id,
                     duration = intern_duration,
                     user_account_id = validation_data['sub'],
-                    cv = user_filename['cv'],
-                    cover_letter = user_filename['cover_letter'],
-                    student_card = user_filename['student_card'],
-                    photo = user_filename['photo'],
-                    proposal = user_filename['proposal']
+                    cv = user_filenames['cv'],
+                    cover_letter = user_filenames['cover_letter'],
+                    student_card = user_filenames['student_card'],
+                    photo = user_filenames['photo'],
+                    proposal = user_filenames['proposal']
                 )
 
                 session.add(registration_data)

@@ -1,4 +1,6 @@
+from datetime import datetime, timezone
 from fastapi import FastAPI, UploadFile, File, HTTPException, Request, Depends, Form
+from app.controllers.interns import InternController
 from app.routers.user import user_router
 from app.routers.auth import auth_router
 from app.routers.interns import intern_router
@@ -15,18 +17,9 @@ from botocore.exceptions import NoCredentialsError, PartialCredentialsError, Cli
 from app.schema.register_intern import InternFiles
 from fastapi.responses import JSONResponse
 from app.schema.register_intern import FileTypes
-
+from app.utils.boto3 import  bucket_name, s3
 
 app = FastAPI()
-
-s3 = boto3.client(
-    's3',
-    aws_access_key_id = Config.AWS_ACCESS_KEY,
-    aws_secret_access_key = Config.AWS_SECRET_KEY
-)
-
-bucket_name = str(Config.AWS_BUCKET_NAME)
-
 Base.metadata.create_all(bind=engine)
 
 app.include_router(user_router)
@@ -51,3 +44,24 @@ async def test_download():
         raise HTTPException(status_code=403, detail="Incomplete AWS credentials")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    
+
+@app.post('/post-aws')
+@login_required(
+    token_types=["USER"],
+    return_validation_data=True
+)
+async def test_download(
+    request: Request,
+    validation_data: dict = None,
+    division_id: int = Form(..., description="Division ID"),
+    intern_duration: str = Form(..., description="Intern Duration"),
+    files: InternFiles = Depends()
+):
+    res = await InternController().register_intern(
+        division_id,
+        intern_duration,
+        files,
+        validation_data
+    )
+    return res
