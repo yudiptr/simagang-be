@@ -21,6 +21,18 @@ async def get_intern_quota():
     res = await InternController().get_quota()
     return res
 
+
+@intern_router.get('/registration-list')
+@login_required(
+    token_types=["Admin"],
+)
+async def accept_intern_registration(
+    request: Request
+):
+    res = await InternController().get_list_registration_intern()
+    return res
+
+
 @intern_router.patch('/accept')
 @login_required(
     token_types=["Admin"],

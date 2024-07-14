@@ -2,6 +2,7 @@ from datetime import datetime, timezone
 from typing import List
 from app.choices.intern_registration_status import InternRegistrationStatus
 from app.models.intern_registration import InternRegistration
+from app.schema.intern_registration import InternRegistrationSchema
 from app.schema.register_intern import InternFiles
 from app.utils.databases import session_scope
 from fastapi import HTTPException, status, Response
@@ -21,6 +22,44 @@ s3 = boto3.client(
 
 bucket_name = str(Config.AWS_BUCKET_NAME)
 class InternController:
+
+    @staticmethod
+    async def get_list_registration_intern():
+        try:
+            with session_scope() as session:
+                regist_data: List[InternRegistration] = session.query(
+                    InternRegistration
+                ).filter_by(
+                    status = InternRegistrationStatus.ON_PROCESS
+                ).all()
+
+
+                serialiez_registration = InternRegistrationSchema(many = True).dump(regist_data)
+                res = dict(
+                        message = "Success get registration list",
+                        code = status.HTTP_200_OK,
+                        data = serialiez_registration
+                    )
+                
+                return Response(
+                    content=json.dumps(res),
+                    media_type="application/json",
+                    status_code= status.HTTP_200_OK
+                )
+            
+
+        except Exception as e :
+            res = dict(
+                    message = "Failed to get list intern registration due to server",
+                    code = status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    messaga = str(e)
+                )
+
+            return Response(
+                content=json.dumps(res),
+                media_type="application/json",
+                status_code= status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
     
     @staticmethod
     async def accept_intern_registration(validation_data: dict, registration_ids: List[int]):
