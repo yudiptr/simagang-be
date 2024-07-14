@@ -1,6 +1,7 @@
+from datetime import datetime
 import json
 from typing import List
-from fastapi import APIRouter, Depends, Form, HTTPException, Response, Request, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Response, Request, UploadFile, status
 from marshmallow import ValidationError
 from app.controllers.interns import InternController
 from app.schema.add_new_division import AddNewDivision
@@ -32,6 +33,59 @@ async def get_registration_list(
     res = await InternController().get_list_registration_intern()
     return res
 
+@intern_router.get('/my-registration')
+@login_required(
+    token_types=["USER"],
+    return_validation_data=True
+)
+async def get_registration_list(
+    request: Request,
+    validation_data : dict = None
+):
+    res = await InternController().get_my_applicants(validation_data=validation_data)
+    return res
+
+@intern_router.get('/report')
+@login_required(
+    token_types=["Admin"],
+)
+async def get_finished_report_list(
+    request: Request
+):
+    res = await InternController().get_list_report_intern()
+    return res
+
+@intern_router.post('/final-report')
+@login_required(
+    token_types=["USER", "Admin"],
+    return_validation_data=True
+)
+async def final_report_intern(
+    request: Request,
+    validation_data: dict = None,
+    start_date: str = Form(..., description="Internship Start Date"),
+    end_date: str = Form(..., description="Internship End Date"),
+    division_id: int = Form(..., description="Division ID"),
+    intern_certificate: UploadFile = File(..., media_type='application/pdf')
+):
+    file_size = len(intern_certificate.file.read())
+    if file_size > (3 * 1024 * 1024):  # 3MB limit
+        raise HTTPException(status_code=400, detail="File intern certificate exceeds 3MB limit")
+
+    try:
+        start_date = datetime.strptime(start_date, "%d/%m/%Y")
+        end_date = datetime.strptime(end_date, "%d/%m/%Y")
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid date format. Use dd/mm/yyyy")
+
+    res = await InternController().report_final_internship(
+        validation_data,
+        start_date,
+        end_date,
+        division_id,
+        intern_certificate
+    )
+    return res
 
 @intern_router.patch('/accept')
 @login_required(

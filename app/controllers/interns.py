@@ -1,11 +1,13 @@
 from datetime import datetime, timezone
 from typing import List
 from app.choices.intern_registration_status import InternRegistrationStatus
+from app.models.intern_finished import InternFinished
 from app.models.intern_registration import InternRegistration
 from app.schema.intern_registration import InternRegistrationSchema
+from app.schema.intern_report import InternReportSchema
 from app.schema.register_intern import InternFiles
 from app.utils.databases import session_scope
-from fastapi import HTTPException, status, Response
+from fastapi import HTTPException, UploadFile, status, Response
 from app.models.intern_division import InternDivision
 from app.models.intern_quota import InternQuota
 import json
@@ -22,6 +24,106 @@ s3 = boto3.client(
 
 bucket_name = str(Config.AWS_BUCKET_NAME)
 class InternController:
+
+    @staticmethod
+    async def report_final_internship(
+        validation_data: dict, 
+        start_date: datetime,
+        end_date: datetime,
+        division_id : int,
+        intern_certificate: UploadFile
+    ):
+        try:
+            with session_scope() as session :   
+                try:
+                    s3.head_bucket(Bucket=bucket_name)
+                except ClientError as e:
+                    error_code = int(e.response['Error']['Code'])
+                    if error_code == 404:
+                        raise HTTPException(status_code=404, detail="Bucket does not exist")
+                    else:
+                        raise HTTPException(status_code=500, detail="Error checking bucket")
+                    
+                try:
+                    current_time = datetime.now(timezone.utc)
+                    milliseconds = current_time.strftime("%f")
+                    filename = f"{validation_data['sub']}_{milliseconds}_{intern_certificate.filename}"
+                    s3.upload_fileobj(intern_certificate.file, bucket_name, filename)
+                except ClientError as e:
+                    raise HTTPException(status_code=500, detail=f"Error uploading file: {str(e)}")
+                
+
+                new_report: InternFinished = InternFinished(
+                    start_date = start_date,
+                    end_date = end_date,
+                    intern_certification = filename,
+                    division_id = division_id,
+                    user_account_id = validation_data["sub"]
+                )
+
+                session.add(new_report)
+                session.commit()
+
+                res = dict(
+                        message = "Success report intern",
+                        code = status.HTTP_200_OK
+                    )
+                
+                return Response(
+                    content=json.dumps(res),
+                    media_type="application/json",
+                )
+           
+        except Exception as e:
+            res = dict(
+                    message = "Failed to report internship due to server",
+                    code = status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    messaga = str(e)
+                )
+
+            return Response(
+                content=json.dumps(res),
+                media_type="application/json",
+                status_code= status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+    @staticmethod
+    async def get_my_applicants(validation_data: dict):
+        try:
+            with session_scope() as session:
+                my_registration: List[InternRegistration] = session.query(
+                    InternRegistration
+                ).filter_by(
+                    user_account_id = validation_data['sub'],
+                ).all()
+                
+                serialiez_registration = InternRegistrationSchema(many = True).dump(my_registration)
+
+                res = dict(
+                        message = "Success get registration list",
+                        code = status.HTTP_200_OK,
+                        data = serialiez_registration
+                    )
+                
+                return Response(
+                    content=json.dumps(res),
+                    media_type="application/json",
+                    status_code= status.HTTP_200_OK
+                )
+            
+
+        except Exception as e :
+            res = dict(
+                    message = "Failed to get list of my registration due to server",
+                    code = status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    messaga = str(e)
+                )
+
+            return Response(
+                content=json.dumps(res),
+                media_type="application/json",
+                status_code= status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
     @staticmethod
     async def get_list_registration_intern():
@@ -51,6 +153,42 @@ class InternController:
         except Exception as e :
             res = dict(
                     message = "Failed to get list intern registration due to server",
+                    code = status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    messaga = str(e)
+                )
+
+            return Response(
+                content=json.dumps(res),
+                media_type="application/json",
+                status_code= status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+        
+    @staticmethod
+    async def get_list_report_intern():
+        try:
+            with session_scope() as session:
+                report_data: List[InternRegistration] = session.query(
+                    InternFinished
+                ).all()
+
+
+                serialiez_registration = InternReportSchema(many = True).dump(report_data)
+                res = dict(
+                        message = "Success get report list",
+                        code = status.HTTP_200_OK,
+                        data = serialiez_registration
+                    )
+                
+                return Response(
+                    content=json.dumps(res),
+                    media_type="application/json",
+                    status_code= status.HTTP_200_OK
+                )
+            
+
+        except Exception as e :
+            res = dict(
+                    message = "Failed to get list intern report due to server",
                     code = status.HTTP_500_INTERNAL_SERVER_ERROR,
                     messaga = str(e)
                 )
@@ -269,11 +407,10 @@ class InternController:
                     media_type="application/json",
                 )
 
-
-                    
+                   
         except Exception as e:
             res = dict(
-                    message = "Failed to register server due to server",
+                    message = "Failed to register intern due to server",
                     code = status.HTTP_500_INTERNAL_SERVER_ERROR,
                     messaga = str(e)
                 )

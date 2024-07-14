@@ -33,65 +33,14 @@ app.include_router(user_router)
 app.include_router(auth_router)
 app.include_router(intern_router)
 
-def handle_file_uploads(files: InternFiles):
-    try:
-        s3.head_bucket(Bucket=bucket_name)
-    except ClientError as e:
-        error_code = int(e.response['Error']['Code'])
-        if error_code == 404:
-            raise HTTPException(status_code=404, detail="Bucket does not exist")
-        else:
-            raise HTTPException(status_code=500, detail="Error checking bucket")
-
-    try:
-        for key, file in files.dict().items():
-            s3.upload_fileobj(file.file, bucket_name, file.filename)
-
-        return True
-    except ClientError as e:
-        raise HTTPException(status_code=500, detail=f"Error uploading file: {str(e)}")
-
-@app.post("/test-aws")
-async def test_upload(
-    division_id: int = Form(..., description="Division ID"),
-    files: InternFiles = Depends()
-):
-    
-    for attr_name, attr_value in files.__dict__.items():
-        file_size = len(attr_value.file.read())
-
-        if attr_name == "photo":
-            if attr_value.content_type != FileTypes.PNG.value:
-                raise HTTPException(status_code=400, detail=f"File {attr_name} must be PNG format")
-        else:
-            if attr_value.content_type != FileTypes.PDF.value:
-                raise HTTPException(status_code=400, detail=f"File {attr_name} must be PDF format")
-        if file_size > (3 * 1024 * 1024):  # 3MB limit
-            raise HTTPException(status_code=400, detail=f"File {attr_name} exceeds 3MB limit")
-
-
-    # Validate file types and upload files to S3
-    if not handle_file_uploads(files):
-        raise HTTPException(status_code=500, detail="Failed to upload files to S3")
-
-    return JSONResponse(content={
-        "message": "Files uploaded successfully",
-        "division_id": division_id,
-        "cv_filename": files.cv.filename,
-        "cover_letter_filename": files.cover_letter.filename,
-        "student_card_filename": files.student_card.filename,
-        "photo_filename": files.photo.filename,
-        "proposal_filename": files.proposal.filename,
-    })
-
-@app.get('/test-download-aws')
+@app.get('/generate-download-link')
 async def test_download():
     try:
         url = s3.generate_presigned_url(
             'get_object',
             Params={
                 'Bucket': bucket_name,
-                'Key': 'interface.htm'
+                'Key': 'CV_Yudi Putra Sabri (3).pdf'
             },
             ExpiresIn=600,
         )
