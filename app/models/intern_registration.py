@@ -18,7 +18,7 @@ class InternRegistration(Base):
     photo = Column(String)
     proposal = Column(String)
     updated_with = Column(String)
-
+    duration = Column(String)
     division_id = Column(Integer, ForeignKey('intern_division.id'))
     user_account_id = Column(Integer, ForeignKey("user_account.id"))
 

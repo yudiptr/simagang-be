@@ -1,10 +1,13 @@
 import json
-from fastapi import APIRouter, Response, Request, status
+from typing import List
+from fastapi import APIRouter, Depends, Form, HTTPException, Response, Request, status
 from marshmallow import ValidationError
 from app.controllers.interns import InternController
 from app.schema.add_new_division import AddNewDivision
+from app.schema.register_intern import FileTypes, InternFiles
 from app.schema.set_intern_quota import SetInternQuota
-
+from app.schema.update_intern_registration import UpdateInternRegistration
+from app.utils.decorators import login_required
 
 intern_router = APIRouter(prefix='/intern')
 
@@ -16,6 +19,101 @@ async def get_intern_division():
 @intern_router.get('/quota')
 async def get_intern_quota():
     res = await InternController().get_quota()
+    return res
+
+@intern_router.patch('/accept')
+@login_required(
+    token_types=["Admin"],
+    return_validation_data=True
+)
+async def accept_intern_registration(
+    request: Request,
+    validation_data: dict = None
+):
+    
+    body = await request.body()
+    json_data = body.decode('utf-8')
+    data = json.loads(json_data)
+    
+    try : 
+        req = UpdateInternRegistration().load(data)
+    except ValidationError as e :
+        res = dict(
+            message = "Validation error",
+            errors = e.messages
+        )
+        return Response(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            media_type="application/json",
+            content=json.dumps(res)
+        )
+    
+    res = await InternController().accept_intern_registration(
+        validation_data,
+        req["registration_ids"]
+    )
+    return res
+
+@intern_router.patch('/reject')
+@login_required(
+    token_types=["Admin"],
+    return_validation_data=True
+)
+async def reject_intern_registration(
+    request: Request,
+    validation_data: dict = None
+):
+    body = await request.body()
+    json_data = body.decode('utf-8')
+    data = json.loads(json_data)
+    
+    try : 
+        req = UpdateInternRegistration().load(data)
+    except ValidationError as e :
+        res = dict(
+            message = "Validation error",
+            errors = e.messages
+        )
+        return Response(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            media_type="application/json",
+            content=json.dumps(res)
+        )
+    
+    res = await InternController().reject_intern_registration(
+        validation_data,
+        req["registration_ids"]
+    )
+    return res
+
+@intern_router.post('/register')
+@login_required(return_validation_data=True, token_types=["USER"])
+async def register_intern(
+        request: Request,
+        validation_data: dict = None,
+        division_id: int = Form(..., description="Division ID"),
+        intern_duration: str = Form(..., description="Intern Duration"),
+        files: InternFiles = Depends()
+    ):
+
+    for attr_name, attr_value in files.__dict__.items():
+        file_size = len(attr_value.file.read())
+
+        if attr_name == "photo":
+            if attr_value.content_type != FileTypes.PNG.value:
+                raise HTTPException(status_code=400, detail=f"File {attr_name} must be PNG format")
+        else:
+            if attr_value.content_type != FileTypes.PDF.value:
+                raise HTTPException(status_code=400, detail=f"File {attr_name} must be PDF format")
+        if file_size > (3 * 1024 * 1024):  # 3MB limit
+            raise HTTPException(status_code=400, detail=f"File {attr_name} exceeds 3MB limit")
+
+    res = await InternController().register_intern(
+        division_id,
+        intern_duration,
+        files,
+        validation_data
+    )
     return res
 
 @intern_router.post('/quota')

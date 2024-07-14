@@ -7,7 +7,7 @@ from typing import Any, Callable, List
 from app.config import Config
 
 def login_required(
-    token_types: List[str] = ["USER", "ADMIN"],
+    token_types: List[str] = ["USER", "Admin"],
     return_validation_data: bool = False
 ) -> Callable:
     def decorator(f: Callable) -> Callable:
@@ -19,7 +19,7 @@ def login_required(
             if not auth_token:
                 raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized")
 
-            token_data = extract_jwt(auth_token[7:])
+            token_data = extract_jwt(auth_token[7:])            
 
             allowed_token_types = token_types
             if "role" in token_data and token_data["role"] not in allowed_token_types:

@@ -35,8 +35,6 @@ app.include_router(intern_router)
 
 def handle_file_uploads(files: InternFiles):
     try:
-        # Check if the bucket exists
-        print("here")
         s3.head_bucket(Bucket=bucket_name)
     except ClientError as e:
         error_code = int(e.response['Error']['Code'])
@@ -46,8 +44,6 @@ def handle_file_uploads(files: InternFiles):
             raise HTTPException(status_code=500, detail="Error checking bucket")
 
     try:
-        # Upload files to S3
-        print(123)
         for key, file in files.dict().items():
             s3.upload_fileobj(file.file, bucket_name, file.filename)
 
@@ -89,7 +85,7 @@ async def test_upload(
     })
 
 @app.get('/test-download-aws')
-async def test_upload():
+async def test_download():
     try:
         url = s3.generate_presigned_url(
             'get_object',
