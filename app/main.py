@@ -18,6 +18,8 @@ from app.schema.register_intern import InternFiles
 from fastapi.responses import JSONResponse
 from app.schema.register_intern import FileTypes
 from app.utils.boto3 import  bucket_name, s3
+from fastapi.middleware.cors import CORSMiddleware
+
 
 app = FastAPI()
 Base.metadata.create_all(bind=engine)
@@ -25,6 +27,14 @@ Base.metadata.create_all(bind=engine)
 app.include_router(user_router)
 app.include_router(auth_router)
 app.include_router(intern_router)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000", "https://simagang-fe.vercel.app"],  # Your frontend URL
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.get('/generate-download-link')
 async def test_download():
