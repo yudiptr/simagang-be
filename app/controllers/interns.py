@@ -421,7 +421,7 @@ class InternController:
 
                 if not division :
                     res = dict(
-                        message = f"Division with id {req["division_id"]} is not found",
+                        message = f"Division with id {req['division_id']} is not found",
                         code = status.HTTP_400_BAD_REQUEST
                     )
                 
@@ -477,7 +477,7 @@ class InternController:
 
                 if division :
                     res = dict(
-                        message = f"Division with name {req["division_name"]} is already registered",
+                        message = f"Division with name {req['division_name']} is already registered",
                         code = status.HTTP_400_BAD_REQUEST
                     )
                 
