@@ -33,3 +33,13 @@ async def update_profile(request: Request, validation_data: dict = None):
     
     res = await UserController().update_profile(data, validation_data)    
     return res
+
+
+@user_router.get("/profile")
+@login_required(
+    token_types=["USER"],
+    return_validation_data=True
+)
+async def get_profile(request: Request, validation_data : dict = None):
+    res = await UserController().get_profile(validation_data)    
+    return res

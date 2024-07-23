@@ -1,3 +1,4 @@
+from app.schema.profile_schema import ProfileSchema
 from app.utils.databases import session_scope
 from fastapi import Response, status
 from app.models.user_account import UserAccount
@@ -6,6 +7,70 @@ import json
 from app.utils.jwt import create_access_token
 
 class UserController:
+    @staticmethod
+    async def get_profile(validation_data : dict):
+        try :
+            with session_scope() as session :
+                user: UserAccount = session.query(
+                    UserAccount
+                ).filter_by(
+                    id = validation_data["sub"]
+                ).first()
+
+                if not user : 
+                    res = dict(
+                        message = f"The user with account id {validation_data['sub']} is not found!",
+                        code = status.HTTP_400_BAD_REQUEST
+                    )
+                    return Response(
+                        content=json.dumps(res),
+                        media_type="application/json",
+                        status_code= status.HTTP_400_BAD_REQUEST
+                    )
+
+
+                profile: UserProfile = session.query(
+                    UserProfile
+                ).filter_by(
+                    user_account_id = validation_data["sub"]
+                ).first()
+
+                if not profile and user.is_complete is False : 
+                    res = dict(
+                        message = f"The profile with account id {validation_data['sub']} is not found!",
+                        code = status.HTTP_200_OK
+                    )
+                    return Response(
+                        content=json.dumps(res),
+                        media_type="application/json",
+                        status_code= status.HTTP_400_BAD_REQUEST
+                    )
+
+                req = ProfileSchema().dump(profile)
+                res = dict(
+                        message = "Success update profile",
+                        code = status.HTTP_200_OK,
+                        data = req
+                    )
+                
+                return Response(
+                    content=json.dumps(res),
+                    media_type="application/json",
+                    status_code= status.HTTP_200_OK
+                )
+
+
+        except Exception as e :
+            res = dict(
+                message = "Failed to update profile due to server",
+                code = status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+        
+            return Response(
+                content=json.dumps(res),
+                media_type="application/json",
+                status_code= status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
     @staticmethod
     async def register_user(req: dict) -> Response:
         try :
