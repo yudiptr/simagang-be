@@ -431,16 +431,22 @@ class InternController:
                         status_code= status.HTTP_400_BAD_REQUEST
                     )
 
-
-                new_quota = InternQuota(
+                quota: InternQuota = session.query(InternQuota).filter_by(
                     duration = req["duration"],
-                    quota = req["quota"],
                     division_id = req["division_id"]
-                )
-
-                session.add(new_quota)
+                ).first()
+                
+                if quota :
+                    quota.quota = req["quota"]
+                    session.add(quota)
+                else:
+                    new_quota = InternQuota(
+                        duration = req["duration"],
+                        quota = req["quota"],
+                        division_id = req["division_id"]
+                    )
+                    session.add(new_quota)
                 session.commit()
-                session.refresh(new_quota)
 
                 res = dict(
                         message = "Success set intern quota",
