@@ -1,8 +1,8 @@
-"""done all model
+"""init
 
-Revision ID: 32fad41a5c99
+Revision ID: bc81fe833a88
 Revises: 
-Create Date: 2024-07-05 15:01:29.044881
+Create Date: 2024-07-24 20:45:50.993215
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '32fad41a5c99'
+revision: str = 'bc81fe833a88'
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -24,8 +24,9 @@ def upgrade() -> None:
     sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
     sa.Column('created_at', sa.DateTime(), nullable=True),
     sa.Column('updated_at', sa.DateTime(), nullable=True),
-    sa.Column('division_name', sa.String(), nullable=True),
-    sa.PrimaryKeyConstraint('id')
+    sa.Column('division_name', sa.String(), nullable=False),
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('division_name')
     )
     op.create_table('user_account',
     sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
@@ -54,7 +55,7 @@ def upgrade() -> None:
     sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
     sa.Column('created_at', sa.DateTime(), nullable=True),
     sa.Column('updated_at', sa.DateTime(), nullable=True),
-    sa.Column('duration', sa.Integer(), nullable=True),
+    sa.Column('duration', sa.String(), nullable=True),
     sa.Column('quota', sa.Integer(), nullable=True),
     sa.Column('division_id', sa.Integer(), nullable=True),
     sa.ForeignKeyConstraint(['division_id'], ['intern_division.id'], ),
@@ -71,6 +72,7 @@ def upgrade() -> None:
     sa.Column('photo', sa.String(), nullable=True),
     sa.Column('proposal', sa.String(), nullable=True),
     sa.Column('updated_with', sa.String(), nullable=True),
+    sa.Column('duration', sa.String(), nullable=True),
     sa.Column('division_id', sa.Integer(), nullable=True),
     sa.Column('user_account_id', sa.Integer(), nullable=True),
     sa.ForeignKeyConstraint(['division_id'], ['intern_division.id'], ),

@@ -169,7 +169,7 @@ async def reject_intern_registration(
     return res
 
 @intern_router.post('/register')
-@login_required(return_validation_data=True, token_types=["USER"])
+@login_required(return_validation_data=True, token_types=["USER", "Admin"])
 async def register_intern(
         request: Request,
         validation_data: dict = None,

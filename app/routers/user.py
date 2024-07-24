@@ -10,7 +10,7 @@ user_router = APIRouter(prefix="/user")
 
 @user_router.post("/profile")
 @login_required(
-    token_types=["USER"],
+    token_types=["USER", "Admin"],
     return_validation_data=True
 )
 async def update_profile(request: Request, validation_data: dict = None):
@@ -37,7 +37,7 @@ async def update_profile(request: Request, validation_data: dict = None):
 
 @user_router.get("/profile")
 @login_required(
-    token_types=["USER"],
+    token_types=["USER", "Admin"],
     return_validation_data=True
 )
 async def get_profile(request: Request, validation_data : dict = None):

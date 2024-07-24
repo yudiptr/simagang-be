@@ -19,7 +19,7 @@ from fastapi.responses import JSONResponse
 from app.schema.register_intern import FileTypes
 from app.utils.boto3 import  bucket_name, s3
 from fastapi.middleware.cors import CORSMiddleware
-
+from pydantic import BaseModel
 
 app = FastAPI()
 Base.metadata.create_all(bind=engine)
@@ -36,14 +36,17 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.get('/generate-download-link')
-async def test_download():
+class FileRequest(BaseModel):
+    filename: str
+
+@app.post('/generate-download-link')
+async def generate_download_link(file_request: FileRequest):
     try:
         url = s3.generate_presigned_url(
             'get_object',
             Params={
                 'Bucket': bucket_name,
-                'Key': 'CV_Yudi Putra Sabri (3).pdf'
+                'Key': file_request.filename
             },
             ExpiresIn=600,
         )

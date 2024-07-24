@@ -4,6 +4,7 @@ from typing import Dict, List
 from app.choices.intern_registration_status import InternRegistrationStatus
 from app.models.intern_finished import InternFinished
 from app.models.intern_registration import InternRegistration
+from app.models.user_profile import UserProfile
 from app.schema.intern_registration import InternRegistrationSchema
 from app.schema.intern_report import InternReportSchema
 from app.schema.register_intern import InternFiles
@@ -117,11 +118,23 @@ class InternController:
         try:
             with session_scope() as session:
                 regist_data: List[InternRegistration] = session.query(
-                    InternRegistration
-                ).filter_by(
-                    status = InternRegistrationStatus.ON_PROCESS
-                ).all()
-
+                    InternRegistration.id,
+                    InternRegistration.created_at,
+                    InternRegistration.updated_at,
+                    InternRegistration.status,
+                    InternRegistration.cv,
+                    InternRegistration.cover_letter,
+                    InternRegistration.student_card,
+                    InternRegistration.photo,
+                    InternRegistration.proposal,
+                    InternRegistration.duration,
+                    InternRegistration.division_id,
+                    InternDivision.division_name,
+                    UserProfile.fullname
+                ).filter(
+                    InternRegistration.division_id == InternDivision.id,
+                    InternRegistration.user_account_id == UserProfile.user_account_id
+                ).order_by(InternRegistration.id).all()
 
                 serialiez_registration = InternRegistrationSchema(many = True).dump(regist_data)
                 res = dict(
@@ -361,8 +374,10 @@ class InternController:
                     for key, data in files.items():
                         current_time = datetime.now(timezone.utc)
                         milliseconds = current_time.strftime("%f")
+
                         filename = f"{validation_data['sub']}_{division.division_name}_{milliseconds}_{key}"
 
+                        filename +=  ".png" if key == "photo" else ".pdf"
                         s3.upload_fileobj(io.BytesIO(data), bucket_name, filename)
                         user_filenames[key] = filename
                 except ClientError as e:
