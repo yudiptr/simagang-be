@@ -28,7 +28,7 @@ async def get_intern_quota():
 
 @intern_router.get('/registration-list')
 @login_required(
-    token_types=["Admin"],
+    token_types=["Admin", "USER"],
 )
 async def get_registration_list(
     request: Request
@@ -38,7 +38,7 @@ async def get_registration_list(
 
 @intern_router.get('/my-registration')
 @login_required(
-    token_types=["USER"],
+    token_types=["USER", "Admin"],
     return_validation_data=True
 )
 async def get_registration_list(
@@ -50,7 +50,7 @@ async def get_registration_list(
 
 @intern_router.get('/report')
 @login_required(
-    token_types=["Admin"],
+    token_types=["Admin", "USER"],
 )
 async def get_finished_report_list(
     request: Request

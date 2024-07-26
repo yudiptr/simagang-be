@@ -3,6 +3,9 @@ from app.utils.databases import Base
 from datetime import datetime, timezone
 from app.choices.role import Roles
 from sqlalchemy import Column, DateTime, Integer, String, event, func, Boolean, Enum
+from passlib.context import CryptContext
+
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 class UserAccount(Base):
     __tablename__ = "user_account"
@@ -15,10 +18,10 @@ class UserAccount(Base):
     updated_at = Column(DateTime, default=datetime.now(timezone.utc), onupdate=func.now())
 
     def set_password(self, password):
-        self.password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+        self.password = pwd_context.hash(password)
 
     def check_password(self, password):
-        return bcrypt.checkpw(password.encode('utf-8'), self.password.encode('utf-8'))
+        return pwd_context.verify(password, self.password)
 
 @event.listens_for(UserAccount, 'before_insert', propagate=True)
 def receive_before_insert(mapper, connection, target):

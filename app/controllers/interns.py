@@ -35,7 +35,7 @@ class InternController:
                 try:
                     current_time = datetime.now(timezone.utc)
                     milliseconds = current_time.strftime("%f")
-                    filename = f"{validation_data['sub']}_{milliseconds}_{intern_certificate.filename}"
+                    filename = f"{validation_data['sub']}_{milliseconds}_report.pdf"
                     s3.upload_fileobj(io.BytesIO(intern_byte), bucket_name, filename)
                 except ClientError as e:
                     raise HTTPException(status_code=500, detail=f"Error uploading file: {str(e)}")
@@ -80,10 +80,24 @@ class InternController:
         try:
             with session_scope() as session:
                 my_registration: List[InternRegistration] = session.query(
-                    InternRegistration
-                ).filter_by(
-                    user_account_id = validation_data['sub'],
-                ).all()
+                    InternRegistration.id,
+                    InternRegistration.created_at,
+                    InternRegistration.updated_at,
+                    InternRegistration.status,
+                    InternRegistration.cv,
+                    InternRegistration.cover_letter,
+                    InternRegistration.student_card,
+                    InternRegistration.photo,
+                    InternRegistration.proposal,
+                    InternRegistration.duration,
+                    InternRegistration.division_id,
+                    InternDivision.division_name,
+                    UserProfile.fullname
+                ).filter(
+                    InternRegistration.division_id == InternDivision.id,
+                    InternRegistration.user_account_id == UserProfile.user_account_id,
+                    InternRegistration.user_account_id == validation_data['sub']
+                ).order_by(InternRegistration.id).all()
                 
                 serialiez_registration = InternRegistrationSchema(many = True).dump(my_registration)
 
@@ -168,7 +182,16 @@ class InternController:
         try:
             with session_scope() as session:
                 report_data: List[InternRegistration] = session.query(
-                    InternFinished
+                    InternFinished.start_date,
+                    InternFinished.end_date,
+                    InternFinished.intern_certification,
+                    InternDivision.division_name,
+                    UserProfile.fullname
+                ).filter(
+                    InternFinished.division_id == InternDivision.id,
+                    InternFinished.user_account_id == UserProfile.user_account_id,
+                ).order_by(
+                    InternFinished.id
                 ).all()
 
 
