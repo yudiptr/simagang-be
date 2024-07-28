@@ -213,6 +213,18 @@ class UserController:
                     user_account.is_complete = True
 
                     session.add(user_account)
+
+                    access_token = create_access_token(
+                        dict(
+                            sub = user_account.id,
+                            username = user_account.username,
+                            is_complete = True,
+                            role = user_account.role
+                        )
+                    )
+                    
+                    req["access_token"] = access_token
+                
                     
                 session.add(user_profile)
                 session.commit()
