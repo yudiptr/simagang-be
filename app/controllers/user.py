@@ -43,7 +43,7 @@ class UserController:
                     return Response(
                         content=json.dumps(res),
                         media_type="application/json",
-                        status_code= status.HTTP_400_BAD_REQUEST
+                        status_code= status.HTTP_200_OK
                     )
 
                 req = ProfileSchema().dump(profile)
@@ -110,6 +110,7 @@ class UserController:
                 )
             
         except Exception as e :
+            print(e)
             res = dict(
                     message = "Failed to register due to server",
                     code = status.HTTP_500_INTERNAL_SERVER_ERROR
