@@ -1,6 +1,6 @@
 from app.utils.databases import Base
 from datetime import datetime, timezone
-from sqlalchemy import Column, DateTime, Integer, String, event, func, Numeric, CheckConstraint, Enum, ForeignKey
+from sqlalchemy import Column, DateTime, Integer, String, event, func, Numeric, CheckConstraint, Enum, ForeignKey, Boolean
 from sqlalchemy.ext.declarative import declarative_base
 from app.choices.gender import Genders
 from sqlalchemy.orm import relationship
@@ -10,6 +10,7 @@ class InternDivision(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     created_at = Column(DateTime, default=datetime.now(timezone.utc))
     updated_at = Column(DateTime, default=datetime.now(timezone.utc), onupdate=func.now())
+    is_deleted = Column(Boolean, default=False)
     division_name = Column(String, unique= True, nullable=False)
     
     # Define relationship with InternQuota

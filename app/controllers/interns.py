@@ -231,7 +231,6 @@ class InternController:
                     InternRegistration
                 ).filter(
                     InternRegistration.id.in_(registration_ids),
-                    InternRegistration.status == InternRegistrationStatus.ON_PROCESS,
                 ).all()
 
                 retrieved_ids = {registration.id for registration in intern_registration_list}
@@ -283,7 +282,6 @@ class InternController:
                     InternRegistration
                 ).filter(
                     InternRegistration.id.in_(registration_ids),
-                    InternRegistration.status == InternRegistrationStatus.ON_PROCESS,
                 ).all()
 
                 retrieved_ids = {registration.id for registration in intern_registration_list}
@@ -570,7 +568,9 @@ class InternController:
     async def get_quota():
         try: 
             with session_scope() as session:
-                quotas = session.query(InternQuota).join(InternDivision).all()
+                quotas = session.query(InternQuota).join(InternDivision).filter(
+                    InternDivision.is_deleted == False
+                ).all()
 
                 division_quota_mapping = {}
                 for quota in quotas:
@@ -608,7 +608,9 @@ class InternController:
     async def get_divsion():
         try:
             with session_scope() as session:
-                division = session.query(InternDivision).all()
+                division = session.query(InternDivision).filter_by(
+                    is_deleted = False
+                ).all()
 
                 serialize_division = InternDivisionSchema(many = True).dump(division)
                 res = dict(
