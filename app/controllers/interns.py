@@ -272,6 +272,58 @@ class InternController:
                 status_code= status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
+    @staticmethod
+    async def delete_intern_division(division_id : int):
+        try:
+            with session_scope() as session:
+                
+                division: InternDivision = session.query(
+                    InternDivision
+                ).filter_by(
+                    is_deleted = False,
+                    id = division_id
+                ).first()
+
+                if not division :
+                    res = dict(
+                        message = f"Failed to get intern division with id {division_id} as a active division" ,
+                        code = status.HTTP_400_BAD_REQUEST,
+                    )
+                
+                    return Response(
+                        content=json.dumps(res),
+                        media_type="application/json",
+                        status_code= status.HTTP_400_BAD_REQUEST
+                    )
+                
+                division.is_deleted = True
+                session.add(division)
+                session.commit()
+
+                
+                res = dict(
+                        message = "Success to delete intern division",
+                        code = status.HTTP_200_OK,
+                    )
+                
+                return Response(
+                    content=json.dumps(res),
+                    media_type="application/json",
+                    status_code= status.HTTP_200_OK
+                )
+
+        except Exception as e :
+            res = dict(
+                    message = "Failed to delete intern division due to server",
+                    code = status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    messaga = str(e)
+                )
+
+            return Response(
+                content=json.dumps(res),
+                media_type="application/json",
+                status_code= status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
     @staticmethod
     async def reject_intern_registration(validation_data: dict, registration_ids: List[int]):

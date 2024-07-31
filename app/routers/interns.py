@@ -136,6 +136,58 @@ async def accept_intern_registration(
     )
     return res
 
+@intern_router.patch('/division/delete')
+@login_required(
+    token_types=["Admin"]
+)
+async def delete_intern_division(
+    request: Request
+):
+    body = await request.json()
+    division_id = body.get("division_id")
+    
+    if not division_id:
+        return {"error": "division_id is required"}
+    
+    res = await InternController().delete_intern_division(
+        division_id
+    )
+    return res
+
+
+@intern_router.patch('/accept')
+@login_required(
+    token_types=["Admin"],
+    return_validation_data=True
+)
+async def accept_intern_registration(
+    request: Request,
+    validation_data: dict = None
+):
+    
+    body = await request.body()
+    json_data = body.decode('utf-8')
+    data = json.loads(json_data)
+    
+    try : 
+        req = UpdateInternRegistration().load(data)
+    except ValidationError as e :
+        res = dict(
+            message = "Validation error",
+            errors = e.messages
+        )
+        return Response(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            media_type="application/json",
+            content=json.dumps(res)
+        )
+    
+    res = await InternController().accept_intern_registration(
+        validation_data,
+        req["registration_ids"]
+    )
+    return res
+
 @intern_router.patch('/reject')
 @login_required(
     token_types=["Admin"],
