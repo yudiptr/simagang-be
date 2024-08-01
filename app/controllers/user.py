@@ -203,9 +203,10 @@ class UserController:
                 if user_profile:
                     for key, value in req.items():
                         setattr(user_profile, key, value)
+                    session.add(user_profile)
                 else:
                     req["user_account_id"] = validation_data["sub"]
-                    user_profile = UserProfile(**req)
+                    new_user_profile = UserProfile(**req)
 
                     user_account: UserAccount = session.query(UserAccount).filter_by(
                         id = validation_data["sub"]
@@ -214,6 +215,7 @@ class UserController:
                     user_account.is_complete = True
 
                     session.add(user_account)
+                    session.add(new_user_profile)
 
                     access_token = create_access_token(
                         dict(
@@ -226,8 +228,6 @@ class UserController:
                     
                     req["access_token"] = access_token
                 
-                    
-                session.add(user_profile)
                 session.commit()
 
 

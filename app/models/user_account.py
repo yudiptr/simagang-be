@@ -38,8 +38,3 @@ class UserAccount(Base):
 def receive_before_insert(mapper, connection, target):
     target.set_password(target.password)
 
-@event.listens_for(UserAccount, 'before_update', propagate=True)
-def receive_before_update(mapper, connection, target):
-    if target.password:
-        target.set_password(target.password)
-    target.updated_at = datetime.now(timezone.utc)
