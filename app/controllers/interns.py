@@ -271,6 +271,61 @@ class InternController:
                 media_type="application/json",
                 status_code= status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+        
+    @staticmethod
+    async def delete_intern_quota(division_id: int, duration: str):
+        try:
+            with session_scope() as session:
+                
+                quota: InternQuota = session.query(
+                    InternQuota
+                ).filter_by(
+                    is_deleted = False,
+                    division_id = division_id,
+                    duration = duration
+                ).first()
+
+                if not quota :
+                    res = dict(
+                        message = f"Failed to get intern quota with division id {division_id} as a active division" ,
+                        code = status.HTTP_400_BAD_REQUEST,
+                    )
+                
+                    return Response(
+                        content=json.dumps(res),
+                        media_type="application/json",
+                        status_code= status.HTTP_400_BAD_REQUEST
+                    )
+                
+                quota.is_deleted = True
+                session.add(quota)
+                session.commit()
+
+                
+                res = dict(
+                        message = "Success to delete intern quota",
+                        code = status.HTTP_200_OK,
+                    )
+                
+                return Response(
+                    content=json.dumps(res),
+                    media_type="application/json",
+                    status_code= status.HTTP_200_OK
+                )
+
+        except Exception as e: 
+            res = dict(
+                    message = "Failed to delete intern quota due to server",
+                    code = status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    messaga = str(e)
+                )
+
+            return Response(
+                content=json.dumps(res),
+                media_type="application/json",
+                status_code= status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
 
     @staticmethod
     async def delete_intern_division(division_id : int):
@@ -391,7 +446,8 @@ class InternController:
         try:
             with session_scope() as session :   
                 division: InternDivision = session.query(InternDivision).filter_by(
-                    id = division_id
+                    id = division_id,
+                    is_deleted = False
                 ).first()
 
                 if not division :
@@ -407,7 +463,8 @@ class InternController:
                 
                 intern_quota: InternQuota = session.query(InternQuota).filter_by(
                     duration = intern_duration,
-                    division_id = division_id
+                    division_id = division_id,
+                    is_deleted = False
                 ).first()
 
                 if not intern_quota : 
@@ -621,7 +678,9 @@ class InternController:
         try: 
             with session_scope() as session:
                 quotas = session.query(InternQuota).join(InternDivision).filter(
-                    InternDivision.is_deleted == False
+                    InternDivision.is_deleted == False,
+                    InternQuota.is_deleted == False,
+                    InternDivision.id == InternQuota.division_id
                 ).all()
 
                 division_quota_mapping = {}

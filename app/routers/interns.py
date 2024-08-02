@@ -41,7 +41,7 @@ async def get_registration_list(
     token_types=["USER"],
     return_validation_data=True
 )
-async def get_registration_list(
+async def get_my_zregistration_list(
     request: Request,
     validation_data : dict = None
 ):
@@ -151,6 +151,37 @@ async def delete_intern_division(
     
     res = await InternController().delete_intern_division(
         division_id
+    )
+    return res
+
+@intern_router.patch('/quota/delete')
+@login_required(
+    token_types=["Admin"]
+)
+async def delete_intern_division(
+    request: Request
+):
+    body = await request.json()
+    division_id = body.get("division_id")
+    duration = body.get("duration")
+    
+    if not division_id:
+        return Response(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            media_type="application/json",
+            content=json.dumps({"error": "division_id is required"})
+        ) 
+    
+    if not duration:
+        return Response(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            media_type="application/json",
+            content=json.dumps({"error": "duration is required"})
+        )
+    
+    res = await InternController().delete_intern_quota(
+        division_id=division_id,
+        duration=duration
     )
     return res
 
