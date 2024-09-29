@@ -30,7 +30,7 @@ app.include_router(intern_router)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "https://simagang-fe.vercel.app"],  # Your frontend URL
+    allow_origins=["http://localhost:3000", "https://simagang-fe.vercel.app", "http://simagangkaidaop4.com"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
