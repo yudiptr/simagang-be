@@ -21,8 +21,8 @@ class UserAccount(Base):
     password = Column(String, nullable=False)
     role = Column(Enum(Roles, name="roles"), default=Roles.USER, nullable=True)
     is_complete = Column(Boolean, default=False)
-    created_at = Column(DateTime, default=datetime.now(timezone.utc))
-    updated_at = Column(DateTime, default=datetime.now(timezone.utc), onupdate=func.now())
+    created_at = Column(DateTime, default=func.timezone('UTC', func.now()))
+    updated_at = Column(DateTime, default=func.timezone('UTC', func.now()), onupdate=func.timezone('UTC', func.now()))
 
     def set_password(self, password):
         self.password = self.hash_password(password)
@@ -32,9 +32,3 @@ class UserAccount(Base):
 
     def hash_password(self, password):
         return hmac.new(SECRET_KEY, password.encode(), hashlib.sha256).hexdigest()
-
-
-@event.listens_for(UserAccount, 'before_insert', propagate=True)
-def receive_before_insert(mapper, connection, target):
-    target.set_password(target.password)
-

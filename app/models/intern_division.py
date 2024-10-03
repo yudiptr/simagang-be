@@ -8,14 +8,10 @@ from sqlalchemy.orm import relationship
 class InternDivision(Base):
     __tablename__ = "intern_division"
     id = Column(Integer, primary_key=True, autoincrement=True)
-    created_at = Column(DateTime, default=datetime.now(timezone.utc))
-    updated_at = Column(DateTime, default=datetime.now(timezone.utc), onupdate=func.now())
+    created_at = Column(DateTime, default=func.timezone('UTC', func.now()))
+    updated_at = Column(DateTime, default=func.timezone('UTC', func.now()), onupdate=func.timezone('UTC', func.now()))
     is_deleted = Column(Boolean, default=False)
     division_name = Column(String, unique= True, nullable=False)
     
     # Define relationship with InternQuota
     quotas = relationship("InternQuota", back_populates="division")
-
-@event.listens_for(InternDivision, 'before_update', propagate=True)
-def receive_before_update(mapper, connection, target):
-    target.updated_at = datetime.now(timezone.utc)

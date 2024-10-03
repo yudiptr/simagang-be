@@ -9,7 +9,7 @@ from app.choices.intern_registration_status import InternRegistrationStatus
 class InternFinished(Base):
     __tablename__ = "intern_finished"
     id = Column(Integer, primary_key=True, autoincrement=True)
-    created_at = Column(DateTime, default=datetime.now(timezone.utc))
+    created_at = Column(DateTime, default=func.timezone('UTC', func.now()))
     
     start_date = Column(DateTime)
     end_date = Column(DateTime)
