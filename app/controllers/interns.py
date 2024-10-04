@@ -19,6 +19,46 @@ from app.config import Config
 from botocore.exceptions import NoCredentialsError, PartialCredentialsError, ClientError
 from app.utils.boto3 import s3, bucket_name
 class InternController:
+    
+    @staticmethod
+    async def delete_intern_registration(
+        registration_id: int
+    ):
+        try:
+            with session_scope() as session :   
+                registration: InternRegistration = session.query(InternRegistration).filter(
+                    InternRegistration.id == registration_id
+                ).first()
+                
+                registration.status = InternRegistrationStatus.DELETED
+                
+                session.add(registration)
+                session.commit()
+
+                res = dict(
+                        message = "Sukses menghapus registrasi intern",
+                        code = status.HTTP_200_OK,
+                    )
+                
+                return Response(
+                    content=json.dumps(res),
+                    media_type="application/json",
+                    status_code= status.HTTP_200_OK
+                )
+                
+        except Exception as e:
+            print(e)
+            res = dict(
+                    message = "Failed to delete intern registration due to server",
+                    code = status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    messaga = str(e)
+                )
+
+            return Response(
+                content=json.dumps(res),
+                media_type="application/json",
+                status_code= status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
     @staticmethod
     async def report_final_internship(
@@ -147,7 +187,8 @@ class InternController:
                     UserProfile.fullname
                 ).filter(
                     InternRegistration.division_id == InternDivision.id,
-                    InternRegistration.user_account_id == UserProfile.user_account_id
+                    InternRegistration.user_account_id == UserProfile.user_account_id,
+                    InternRegistration.status != InternRegistrationStatus.DELETED
                 ).order_by(InternRegistration.id).all()
 
                 serialiez_registration = InternRegistrationSchema(many = True).dump(regist_data)
