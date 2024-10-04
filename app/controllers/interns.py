@@ -136,7 +136,8 @@ class InternController:
                 ).filter(
                     InternRegistration.division_id == InternDivision.id,
                     InternRegistration.user_account_id == UserProfile.user_account_id,
-                    InternRegistration.user_account_id == validation_data['sub']
+                    InternRegistration.user_account_id == validation_data['sub'],
+                    InternRegistration.status != InternRegistrationStatus.DELETED
                 ).order_by(InternRegistration.id).all()
                 
                 serialiez_registration = InternRegistrationSchema(many = True).dump(my_registration)
