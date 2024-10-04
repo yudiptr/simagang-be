@@ -91,9 +91,9 @@ class UserController:
                     )
                 
                 new_user = UserAccount(
-                    username = req["username"],
-                    password = req["password"]
+                    username = req["username"]
                 )
+                new_user.set_password(req["password"])
 
                 session.add(new_user)
                 session.commit()
